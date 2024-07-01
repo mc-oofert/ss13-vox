@@ -19,7 +19,6 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 from buildtools import os_utils, log, utils
 from buildtools.config import YAMLConfig, BaseConfig
 
-from ss13vox.consts import RECOMPRESS_ARGS, PRE_SOX_ARGS
 from ss13vox.proc import InitClass
 from ss13vox.phrase import Phrase, EPhraseFlags, ParsePhraseListFrom, FileData
 from ss13vox.pronunciation import Pronunciation, DumpLexiconScript, ParseLexiconText
@@ -33,7 +32,7 @@ Requires festival, sox, and vorbis-tools.
 
 create.py - Uses festival to generate word oggs.
 
-Copyright 2013-2021 Rob "N3X15" Nelson <nexisentertainment@gmail.com>
+Copyright 2013-2019 Rob "N3X15" Nelson <nexis@7chan.org>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -54,6 +53,33 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 """
+
+###############################################
+# CONFIG
+###############################################
+
+# Direct from TG's PR (https://github.com/tgstation/tgstation/pull/36492)
+# May bump up quality and rate slightly...
+RECOMPRESS_ARGS = [
+    # Audio Codec
+    '-c:a',     'libvorbis',
+    # Force to mono (should already be, since festival outputs mono...)
+    '-ac',      '1',
+    # Sampling rate in Hz. TG uses 16kHz.
+    '-ar',      '16000',
+    # Audio quality [0,9]. TG uses 0.
+    '-q:a',     '0',
+    # Playback speed
+    '-speed',   '0',
+    # Number of threads to use.  This works OK on my laptop, but you may need fewer
+    # Now specified in -j.
+    #'-threads', '8',
+    # Force overwrite
+    '-y']
+
+# Have to do the trimming seperately.
+PRE_SOX_ARGS = 'trim 0 -0.1'  # Trim off last 0.2s.
+
 
 ################################################
 # ROB'S AWFUL CODE BELOW (cleanup planned)
@@ -89,14 +115,13 @@ def GenerateForWord(phrase: Phrase, voice: Voice, writtenfiles: set, args: Optio
                 my_phonemes[_word] = KNOWN_PHONEMES[_word].toLisp().replace('\n', '')
 
 
-    #filename = phrase.filename.format(ID=phrase.id, SEX=voice.assigned_sex)
-    filename = phrase.getFinalFilename(voice.assigned_sex)
+    filename = phrase.filename.format(ID=phrase.id, SEX=voice.assigned_sex)
     sox_args = voice.genSoxArgs(args)
 
     md5 = json.dumps(phrase.serialize())
     md5 += '\n'.join(my_phonemes.values())
     md5 += ''.join(sox_args) + PRE_SOX_ARGS + ''.join(RECOMPRESS_ARGS)
-    md5 += voice.fast_serialize()
+    md5 += voice.ID
     md5 += filename
 
     #filename = os.path.join('sound', 'vox_fem', phrase.id + '.ogg')
@@ -115,7 +140,7 @@ def GenerateForWord(phrase: Phrase, voice: Voice, writtenfiles: set, args: Optio
         nonlocal phrase, voice, oggfile, writtenfiles, fdata
         if voice.ID == SFXVoice.ID:
             # Both masculine and feminine voicepacks link to SFX.
-            for sex in ['fem', 'mas']:
+            for sex in ['fem']:
                 phrase.files[sex] = fdata
         else:
             phrase.files[voice.assigned_sex] = fdata
@@ -146,20 +171,14 @@ def GenerateForWord(phrase: Phrase, voice: Voice, writtenfiles: set, args: Optio
     log.info('Generating {0} for {1} ({2!r})'.format(filename, voice.ID, phrase.phrase))
     text2wave = None
     if phrase.hasFlag(EPhraseFlags.SFX):
-        text2wave = ['ffmpeg', '-i', phrase.phrase, 'tmp/VOX-word.wav']
+        text2wave = 'ffmpeg -i '+phrase.phrase+' tmp/VOX-word.wav'
     else:
-        phrasefile = os.path.join('tmp','VOX-word.txt')
+        with open('tmp/VOX-word.txt', 'w') as wf:
+            wf.write(phrase.phrase)
 
-        text2wave = ['text2wave']
+        text2wave = 'text2wave tmp/VOX-word.txt -o tmp/VOX-word.wav'
         if os.path.isfile('tmp/VOXdict.lisp'):
-            text2wave += ['-eval','tmp/VOXdict.lisp']
-        if phrase.hasFlag(EPhraseFlags.SING):
-            text2wave += ['-mode', 'singing', phrase.phrase]
-        else:
-            with open(phrasefile, 'w') as wf:
-                wf.write(phrase.phrase+"\n")
-            text2wave += [phrasefile]
-        text2wave += ['tmp/VOX-word.txt', '-o', 'tmp/VOX-word.wav']
+            text2wave = 'text2wave -eval tmp/VOXdict.lisp tmp/VOX-word.txt -o tmp/VOX-word.wav'
     with open(checkfile, 'w') as wf:
         wf.write(md5)
     for fn in ('tmp/VOX-word.wav', 'tmp/VOX-soxpre-word.wav', 'tmp/VOX-sox-word.wav', 'tmp/VOX-encoded.ogg'):
@@ -167,7 +186,7 @@ def GenerateForWord(phrase: Phrase, voice: Voice, writtenfiles: set, args: Optio
             os.remove(fn)
 
     cmds = []
-    cmds += [(text2wave, 'tmp/VOX-word.wav')]
+    cmds += [(text2wave.split(' '), 'tmp/VOX-word.wav')]
     if not phrase.hasFlag(EPhraseFlags.NO_PROCESS) or not phrase.hasFlag(EPhraseFlags.NO_TRIM):
         cmds += [(['sox', 'tmp/VOX-word.wav', 'tmp/VOX-soxpre-word.wav'] + PRE_SOX_ARGS.split(' '), 'tmp/VOX-soxpre-word.wav')]
     if not phrase.hasFlag(EPhraseFlags.NO_PROCESS):
@@ -177,15 +196,13 @@ def GenerateForWord(phrase: Phrase, voice: Voice, writtenfiles: set, args: Optio
     for command_spec in cmds:
         (command, cfn) = command_spec
         with os_utils.TimeExecution(command[0]):
-            os_utils.cmd(command, echo=args.echo, critical=True, show_output=command[0] in ('text2wave',))
+            os_utils.cmd(command, echo=True, critical=True, show_output=command[0] in ('text2wave',))
 
     command = ['ffprobe', '-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams', oggfile]
     with os_utils.TimeExecution(command[0]):
         captured = os_utils.cmd_out(command, echo=False, critical=True)
         fdata.fromJSON(json.loads(captured))
         fdata.checksum = md5sum(oggfile)
-        if (not phrase.hasFlag(EPhraseFlags.SFX)) and fdata.duration > 10.0:
-            fdata.duration -= 10.0
 
     for command_spec in cmds:
         (command, cfn) = command_spec
@@ -200,8 +217,9 @@ def GenerateForWord(phrase: Phrase, voice: Voice, writtenfiles: set, args: Optio
 
 def main():
     argp = argparse.ArgumentParser(description='Generation script for ss13-vox.')
+    #argp.add_argument('--codebase', choices=['vg', 'tg'], default='vg', help='Which codebase to generate for. (Affects output code and paths.)')
     argp.add_argument('--threads', '-j', type=int, default=multiprocessing.cpu_count(), help='How many threads to use in ffmpeg.')
-    argp.add_argument('--echo', '-e', action='store_true', default=False, help='Echo external commands to console.')
+    #argp.add_argument('phrasefiles', nargs='+', type=str, help='A list of phrase files.')
     args = argp.parse_args()
 
     if not os.path.isdir('tmp'):
@@ -231,7 +249,7 @@ def main():
         voice = VoiceRegistry.Get(voiceid)
         assert sexID != ''
         voice.assigned_sex = sexID
-        if sexID in ('fem', 'mas'):
+        if sexID in ('fem'):
             sex = EVoiceSex(sexID)
             assert voice.SEX == sex
             voices += [voice]
@@ -257,10 +275,8 @@ def main():
     phrases=[]
     phrasesByID = {}
     broked = False
-    max_wordlen = config.get('max-wordlen', 30)
     for filename in config.get('phrasefiles', ['announcements.txt', 'voxwords.txt']):
         for p in ParsePhraseListFrom(filename):
-            p.wordlen = min(max_wordlen, p.wordlen)
             if p.id in phrasesByID:
                 duplicated = phrasesByID[p.id]
                 log.critical('Duplicate phrase with ID %s in file %s on line %d! First instance in file %s on line %d.', p.id, p.deffile, p.defline, duplicated.deffile, duplicated.defline)
@@ -330,7 +346,6 @@ def main():
         with open(vox_sounds_path, 'w') as f:
             sexes = {
                 'fem': [],
-                'mas': [],
                 'default': [],
                 #'sfx': [],
             }
@@ -342,7 +357,7 @@ def main():
                     continue
                 for k in p.files.keys():
                     if p.hasFlag(EPhraseFlags.SFX):
-                        for sid in ('fem', 'mas'):
+                        for sid in ('fem'):
                             if p not in sexes[sid]:
                                 sexes[sid].append(p)
                     else:
@@ -376,6 +391,7 @@ def main():
             if filename not in soundsToKeep:
                 log.warning('Removing {0} (no longer defined)'.format(filename))
                 os.remove(filename)
+
 
 if __name__ == '__main__':
     main()

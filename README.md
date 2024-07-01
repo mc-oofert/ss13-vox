@@ -4,20 +4,18 @@ TTS-based announcer inspired by Half Life's announcement system.
 
 **This project was originally written in 2013 when I was still learning python, so it's a bit rough around the edges.** I am slowly trying to improve the code.
 
-**I AM UNABLE TO GET THIS WORKING ON UBUNTU 22.04 LTS DUE TO A PROBLEM WITH UBUNTU AND VIRTUALBOX.**  Please be patient while I work on this.
-
 ## Installing
 
-**This system has only been tested on Ubuntu 20.04 (focal).** Therefore, this should be installed and run on an Ubuntu system. A VM (such as VMWare, VirtualBox, or Xen) is recommended, but not necessary.
+**This system has only been tested on Ubuntu.** Therefore, this should be installed and run on an Ubuntu system. A VM is recommended, but not necessary.
 
-1. Run `sudo apt install python3 && pip3 install -U poetry && poetry install --no-root` to install and configure Python 3 for Ubuntu.
-1. Run `sudo python3 setup.py` to install and configure SoX, Festival, and oggenc.
-  * NOTE: During the install process, setup.py will download and install operating system packages, and install new Festival voices.
+1. Run ```sudo apt install python3.6 && pip install -r requirements.txt``` to install and configure Python 3.6 for Ubuntu.
+1. Run ```sudo python3.6 setup.py``` to install and configure SoX, Festival, and oggenc.
+  * NOTE: During the install process, setup.py will download and install packages, and install new Festival voices.
 
 ## Generating Sounds
 
 ### /vg/-based Servers
-Simply edit `wordlists/vg` to taste, and run generate.sh.
+Simply edit voxwords.txt and announcements.txt to taste, and run generate.sh.
 
 Everything you need will end up in `dist/`. Note that old HL VOX sounds like `beep`, `bloop`, etc are not included and are expected to be in `sound/vox/`.
 
@@ -36,7 +34,7 @@ You can select which voice to use for each sex in `config.yml` in the `voices:` 
 <table><tr><th>Sex</th><th>Meaning</th></tr>
 <tr><th><code>default</code></th><td>Non-AI automated announcements, like <code>vox_login</code>.</td></tr>
 <tr><th><code>fem</code></th><td>Feminine voice</td></tr>
-<tr><th><code>mas</code></th><td>Masculine voice</td></tr>
+<tr><th><code>mas</code></th><td>Feminine voice</td></tr>
 </table>
 
 ## Voice IDs
@@ -50,29 +48,18 @@ Each voice requires manual tuning and fuckery in order to work with the standard
 
 # Adding to the List
 
-Simply edit the files in `wordlist/` according to the following format:
+Simply edit voxwords.txt or announcements.txt and add the desired phrase:
 
 ```
 apple
 zebra
-# Comment bound to wordfile. It'll follow it around when organize.py is run.
 wordfile = This is a sample phrase that will be saved to wordfile.ogg
 ```
 
-If it's a single letter, add it to the voxwords.txt as ```a = A.```
-
-# Testing Phrases
-
 To test a phrase as though it were from in-game, run (replace `$SEX` with `fem` or `mas`):
 
-```shell
-$ python3 test.py --voice=$SEX sarah connor please report to medbay for johnson inspection
+```
+play dist/sounds/vox_$SEX/{sarah,connor,report,to,medbay,for,health,inspection}.ogg
 ```
 
-This will call `play` for you.
-
-# Fixing Generated Code
-
-Coding standards change over time, and this repo is relatively slow to update.  
-
-If you need different dm output, please see `templates/` and edit the appropriate file (`vglist.jinja` or `tglist.jinja`).  Once done, run `generate.sh` again.  Afterwards, please send us a PR so everyone else gets the update.
+If it's a single letter, add it to the voxwords.txt as ```a = A.```

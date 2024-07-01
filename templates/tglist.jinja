@@ -6,11 +6,9 @@
 // You should no longer need to parse this for third-party tools.
 GLOBAL_LIST_INIT(vox_sounds, list(
   {%- for sex, phrases in SEXES.items() %}
-  "{{- sex -}}" = list(
     {%- for phrase in phrases %}
-    "{{- phrase.id -}}" = '{{- phrase.files[sex] -}}',
+"{{- phrase.id -}}" = 'sound/vox_fem/{{- phrase.id -}}.ogg',
     {%- endfor %}
-  ),
   {%- endfor %}
 ))
 

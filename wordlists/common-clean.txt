@@ -1,5 +1,0 @@
-# Replacements for some of the common announcements that reduce profanity.
-
-voxtest = Butt Blast U.S.A.
-# Beepsky's famous emag line, but cleaner
-voxtest2 = Fry your cake you soil eating chicken-sucker. Man, eat a donut, flying boat-ramming spam-flipper. Eat pickles in your fat face, and scream out apples of fruit, and do shuttles in your butt, you skub-love spam monkey apple-eater from the depths of Spain!

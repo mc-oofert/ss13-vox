@@ -1,56 +1,27 @@
-import click
-import logging
-import os
-import re
-import sys
-from pathlib import Path
-from typing import Callable, FrozenSet, List, Optional, Set
-from urllib.parse import urlparse
+print('This script will set up your Ubuntu system for building VOX phrases.')
+#print('This assumes you are running on Ubuntu as root (run with sudo).')
 
-try:
-	import apt
-except:
-	print('Please run `apt install python3-apt`!')
-	sys.exit(1)
+import os, re, sys, logging, shutil
+import apt
 
-try:
-	from buildtools import http, os_utils
-	from buildtools.bt_logging import IndentLogger
-except:
-	print('pybuildtools not detected! Please run `python3 -m poetry install && sudo poetry run python setup.py`.')
-	sys.exit(1)
+script_dir = os.path.dirname(os.path.realpath(__file__))
 
-SCRIPT_DIR = Path(__file__).parent
+from buildtools import *
+from buildtools import os_utils, bt_logging
+from buildtools.wrapper import Git
+from buildtools.bt_logging import IndentLogger
 
-# Updated Apr 6 2022 for Ubuntu 20.04.4
-REQUIRED_PACKAGES: Set[str] = {
+REQUIRED_PACKAGES = [
 	# Festival stuff
 	'festival',
-
-	# Lexicons
 	'festlex-cmu',
 	'festlex-poslex',
 	'festlex-oald',
-
-	# Voices
-	'festvox-don',
-	#'festvox-ellpc11k',
-	'festvox-en1',
-	'festvox-kallpc16k',
-	'festvox-kdlpc16k',
 	'festvox-rablpc16k',
-	'festvox-us-slt-hts',
-	'festvox-us1',
-	'festvox-us2',
-	'festvox-us3',
 
 	# Needed by festival
 	'libestools2.5',
 	'unzip',
-
-	# Voice speech dev stuff
-	'flite',
-	'flite-dev',
 
 	# For our own nefarious purposes.
 	'sox',
@@ -58,12 +29,9 @@ REQUIRED_PACKAGES: Set[str] = {
 	'vorbis-tools', #oggenc
 	'ffmpeg',
 
-	# It's 2022. I would like to use Python 3.10 but it is still not widely adopted yet.
-	'python3.9'
-}
+]
 
-# These should still work, for now.
-NITECH_VOICES: Set[str] = {
+NITECH_VOICES = [
 	'http://hts.sp.nitech.ac.jp/archives/2.1/festvox_nitech_us_awb_arctic_hts-2.1.tar.bz2',
 	'http://hts.sp.nitech.ac.jp/archives/2.1/festvox_nitech_us_bdl_arctic_hts-2.1.tar.bz2',
 	'http://hts.sp.nitech.ac.jp/archives/2.1/festvox_nitech_us_clb_arctic_hts-2.1.tar.bz2',
@@ -73,10 +41,9 @@ NITECH_VOICES: Set[str] = {
 	'http://hts.sp.nitech.ac.jp/archives/2.1/festvox_nitech_us_jmk_arctic_hts-2.1.tar.bz2',
 	'http://hts.sp.nitech.ac.jp/archives/1.1.1/cmu_us_kal_com_hts.tar.gz',
 	'http://hts.sp.nitech.ac.jp/archives/1.1.1/cstr_us_ked_timit_hts.tar.gz',
-}
+]
 
-log=IndentLogger(logging.getLogger(__name__))
-
+log=None
 def InstallPackages():
 	global REQUIRED_PACKAGES
 	with log.info('Checking system packages...'):
@@ -101,15 +68,14 @@ def InstallPackages():
 
 def InstallHTS():
 	with log.info('Installing Nitech HTS voices:'):
-		HTS_TMP_DIR = Path('hts_tmp')
-		HTS_TMP_DIR.mkdir(parents=True, exist_ok=True)
-		with os_utils.Chdir('hts_tmp'):
+		if not os.path.isdir('hts_tmp'):
+			os.makedirs('hts_tmp')
+		with Chdir('hts_tmp'):
 			for uri in NITECH_VOICES:
-				#os_utils.cmd(['wget','-c',uri], echo=True, show_output=True, critical=True)
-				http.DownloadFile(uri, os.path.basename(urlparse(uri).path))
+				cmd(['wget','-c',uri], echo=True, show_output=True, critical=True)
 			for filename in os.listdir('.'):
 				if os.path.isdir(filename): continue
-				os_utils.cmd(['tar', 'xvf', filename], echo=True, show_output=False, critical=True)
+				cmd(['tar', 'xvf', filename], echo=True, show_output=False, critical=True)
 			if not os.path.isdir('/usr/share/festival/voices/us'):
 				os.makedirs('/usr/share/festival/voices/us')
 			if not os.path.isdir('/usr/share/festival/voices/us/cmu_us_slt_arctic_hts'):
@@ -117,9 +83,9 @@ def InstallHTS():
 			os_utils.copytree('cmu_us_slt_arctic_hts/', '/usr/share/festival/voices/us/cmu_us_slt_arctic_hts/')
 			os_utils.copytree('lib/voices/us/', '/usr/share/festival/voices/us/')
 			os_utils.copytree('lib/voices/us/', '/usr/share/festival/voices/us/')
-			os_utils.single_copy('lib/hts.scm', '/usr/share/festival/hts.scm', as_file=True)
+			shutil.copy2('lib/hts.scm', '/usr/share/festival/hts.scm')
 
-def FixHTS():
+def fix_HTS():
 	with log.info('Fixing HTS...'):
 		fixes = []
 		#-(require 'hts)
@@ -167,56 +133,30 @@ def FixHTS():
 						os.remove(fixed_filename)
 		log.info('{} files changed.'.format(files_changed))
 
-def do_check(label: str, callback: Callable[[], bool]) -> None:
-	click.secho(('  '+label+'...').rjust(80-4), nl=False)
-	if callback():
-		click.secho('PASS', fg='green')
-	else:
-		click.secho('FAIL', fg='red')
+
+
+logFormatter = logging.Formatter(fmt='%(asctime)s [%(levelname)-8s]: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')  # , level=logging.INFO, filename='crashlog.log', filemode='a+')
+log = logging.getLogger()
+log.setLevel(logging.INFO)
+
+#fileHandler = logging.handlers.RotatingFileHandler(os.path.join(LOGPATH, 'crash.log'), maxBytes=1024 * 1024 * 50, backupCount=0)  # 50MB
+#fileHandler.setFormatter(logFormatter)
+#log.addHandler(fileHandler)
+
+log = IndentLogger(log)
+bt_logging.log = log
+# consoleHandler = logging.StreamHandler()
+# consoleHandler.setFormatter(logFormatter)
+# log.addHandler(consoleHandler)
+
+with log.info('Permissions check:'):
+	if os.getuid() != 0:
+		log.critical('This script is required to be run as root. Example:')
+		log.critical('$ sudo python setup.py')
 		sys.exit(1)
+	else:
+		log.info('I am root.')
 
-CHECK_POSTFIX: List[str] = []
-CURRENT_LSB: Optional[str] = None
-VALID_RELEASES: FrozenSet[str] = frozenset({
-	'focal',
-	'jammy'
-})
-
-def chk_uid() -> bool:
-	return os.getuid() != 0
-
-def get_base_prefix_compat():
-    """Get base/real prefix, or sys.prefix if there is none."""
-    return getattr(sys, "base_prefix", None) or getattr(sys, "real_prefix", None) or sys.prefix
-
-def chk_venv() -> bool:
-	return get_base_prefix_compat() != sys.prefix
-
-def chk_lsb() -> bool:
-	try:
-		import lsb_release
-		lsbdata: dict = {}
-		if hasattr(lsb_release, 'get_distro_information'):
-			lsbdata = lsb_release.get_distro_information()
-		else:
-			lsbdata = lsb_release.get_os_release()
-		CURRENT_LSB = lsbdata['RELEASE']
-		return CURRENT_LSB in VALID_RELEASES
-	except:
-		return False
-
-def main():
-	print('This script will set up your Ubuntu system for building VOX phrases.')
-	with log.info('Sanity checks:'):
-		do_check('Running as root', chk_uid)
-		do_check('Checking Ubuntu release (LSB)', chk_lsb)
-		do_check('Running in virtualenv (poetry shell)', chk_venv)
-
-	InstallPackages()
-	InstallHTS()
-	FixHTS()
-
-	log.info('Done!')
-
-if __name__ == '__main__':
-	main()
+InstallPackages()
+InstallHTS()
+fix_HTS()

@@ -1,21 +1,8 @@
 from typing import List, Optional, Dict
 from enum import IntFlag
 
-from buildtools import log
-import re, os, string
 __ALL__ = ['EPhraseFlags', 'Phrase', 'ParsePhraseListFrom']
-
-# https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
-WINDOZE_RESERVED = re.compile(r'^(CON|PRN|AUX|NUL|COM)[0-9]?$', re.IGNORECASE)
-
-ACCEPTABLE_FILECHARS = string.ascii_letters + string.digits + '_,.'
-REPL_FILECHAR = '_'
-
 S_TO_DS = 10
-
-def _fixChars(filename) -> str:
-    return ''.join([(c if c in ACCEPTABLE_FILECHARS else REPL_FILECHAR) for c in filename])
-
 class EPhraseFlags(IntFlag):
     NONE       = 0
     OLD_VOX    = 1 # AKA preexisting
@@ -23,20 +10,18 @@ class EPhraseFlags(IntFlag):
     NOT_VOX    = 4 # Not used in VOX announcements (meaning stuff that doesn't go in sound/vox_fem/)
     NO_PROCESS = 8 # No echos/reverb
     NO_TRIM    = 16 # Don't remove silence
-    SING       = 32 # Enables `-mode singing` in festival
 
 class FileData(object):
     def __init__(self):
         self.filename: str = ''
         self.voice: str = ''
         self.checksum: str = ''
-        self.duration: float = 0.0
+        self.duration: float = 0
         self.size: int = 0
 
     def fromJSON(self, data: dict) -> None:
         self.size = int(data['format']['size'])
         self.duration = float(data['format']['duration'])
-        assert self.duration > 0.0
 
     def serialize(self) -> dict:
         return {
@@ -90,31 +75,6 @@ class Phrase(object):
         #: Line in which this phrase was defined.
         self.defline: int = 0
 
-    def getFinalFilename(self, sex: str, silent: bool = False) -> str:
-        # Final-ish filename
-        ffn = self.filename.format(ID=self.id, SEX=sex)
-
-        # Check for reserved filenames.
-        dn = os.path.dirname(ffn)
-        bn = os.path.basename(ffn)
-        bn, ext = os.path.splitext(bn)
-
-        m = WINDOZE_RESERVED.match(bn)
-        if m is not None:
-            # CON -> C_ON
-            fbn = f'{bn[0]}_{bn[1:]}'
-            if not silent:
-                log.warning('%s is a reserved filename in Windows, changed to %s!', bn, fbn)
-            bn = fbn
-
-        fbn = _fixChars(bn)
-        if fbn != bn:
-            if not silent:
-                log.warning('%s had invalid chars, changed to %s!', bn, fbn)
-            bn = fbn
-
-        return os.path.join(dn, bn+ext)
-
     def getAssetKey(self, sex: str) -> str:
         return f'{sex}.{self.id}.ogg'
 
@@ -128,12 +88,6 @@ class Phrase(object):
         if self.phrase.startswith('@'):
             self.parsed_phrase = None
             self.flags |= EPhraseFlags.SFX
-            self.phrase = self.phrase[1:]
-
-        # singing = &songs/america.xml
-        elif self.phrase.startswith('&'):
-            self.parsed_phrase = None
-            self.flags |= EPhraseFlags.SING
             self.phrase = self.phrase[1:]
 
         self.parsed_phrase = self.phrase.split(' ')

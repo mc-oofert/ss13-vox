@@ -8,10 +8,30 @@
 
 // A list of sounds
 // Structure: vox_sound["(fem|mas|default)"]["soundid"] = 'sound/vox_sex/soundid.ogg'
-var/list/vox_sounds = list()
+var/list/vox_sounds = list(
+{#- too long now
+  {%- for sex, phrases in SEXES.items() %}
+  {%-   if phrases|length %}
+  "{{- sex -}}" = list(
+    {%-   for phrase in phrases %}
+    "{{- phrase.id -}}" = '{{- phrase.files[sex].filename -}}',
+    {%-   endfor %}
+  ),
+  {%-   endif -%}
+  {%- endfor %}
+-#}
+)
 
 // How long each phrase is (in words).  Single-word phrases are skipped for brevity.
-var/list/vox_wordlen = list()
+var/list/vox_wordlen = list(
+{#-
+  {%- for phrase in PHRASES -%}
+  {%-   if phrase.wordlen > 1 %}
+  "{{- phrase.id -}}" = {{ phrase.wordlen }},
+  {%-   endif -%}
+  {%- endfor %}
+-#}
+)
 
 // How long each phrase is (in deciseconds)
 var/list/vox_sound_lengths = list()
@@ -20,32 +40,32 @@ var/list/vox_sound_lengths = list()
 {%- set initcls = InitClass() -%}
 {%- for sex, phrases in SEXES.items() %}
 {%-   if phrases|length %}
-{%-     do initcls.addInstruction("vox_sounds[\"{}\"] = list()".format(sex), cost=11) -%}
+{%-     do initcls.addInstruction("vox_sounds[\"{}\"] = list()".format(sex)) -%}
 {%-     for phrase in phrases -%}
-{%-       do initcls.addInstruction("vox_sounds[\"{}\"][\"{}\"] = '{}'".format(sex,phrase.id,phrase.files[sex].filename), cost=16) -%}
-{%-       do initcls.addInstruction("vox_sound_lengths['{}'] = {:0.4g}".format(phrase.files[sex].filename,phrase.files[sex].getDurationInDS()), cost=13) -%}
+{%-       do initcls.addInstruction("vox_sounds[\"{}\"][\"{}\"] = '{}'".format(sex,phrase.id,phrase.files[sex].filename)) -%}
+{%-       do initcls.addInstruction("vox_sound_lengths['{}'] = {:0.4g}".format(phrase.files[sex].filename,phrase.files[sex].getDurationInDS())) -%}
 {%-     endfor -%}
 {%-   endif -%}
 {%- endfor -%}
 {%- for phrase in PHRASES -%}
 {%-   if phrase.wordlen > 1 -%}
-{%-     do initcls.addInstruction("vox_wordlen[\"{}\"] = {}".format(phrase.id,phrase.wordlen), cost=13) -%}
+{%-     do initcls.addInstruction("vox_wordlen[\"{}\"] = {}".format(phrase.id,phrase.wordlen)) -%}
 {%-   endif -%}
 {%- endfor %}
 
 // This class is necessary because we have so many assignments to take it crashes the compiler over a certain limit.
 // STATS:
-//  {{initcls.instructions}} instructions spread over {{initcls.procs.keys()|length}} procs.
+//  {{initcls.ninstructions}} instructions spread over {{initcls.procs.keys()|length}} procs.
 //
 #ifndef DISABLE_VOX
 /__vox_sound_meta_init/New()
-{%- for proc in initcls.procs.values() %}
-  src.{{- proc.name -}}() // {{ proc.instructions }} instructions
+{%- for call in initcls.procs.keys() %}
+  src.{{- call -}}()
 {%- endfor %}
 {%- for proc in initcls.procs.values() %}
 /__vox_sound_meta_init/proc/{{- proc.name -}}()
-  {%- for line in proc.lines %}
-  {{ line }}
+  {%- for instr in proc.instructions %}
+  {{ instr }}
   {%- endfor -%}
 {%- endfor %}
 

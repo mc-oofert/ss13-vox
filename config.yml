@@ -1,10 +1,8 @@
-codebase: vg
+codebase: tg
 # ALL AVAILABLE VOICES (so far)
 # 'us-clb' - US Female (Nitech ARCTIC)
 # 'us-slt' - US Female (Nitech ARCTIC; Midwestern)
 # 'us-rms' - US Male (Nitech ARCTIC)
-# Maximum phrase length, in words.
-max-wordlen: 30
 voices:
   # Feminine voiceset
   fem:     us-clb
@@ -15,28 +13,10 @@ voices:
   #default: scot-awb # Scottish voice, absolutely fucking hilarious
 #Plug in your own wordlists here.
 phrasefiles:
-  # /vg/-specific announcements
-  - wordlists/vg/announcements.txt
-  # /vg/-specific antags
-  - wordlists/vg/antags.txt
-  # /vg/-specific chemistry
-  - wordlists/vg/chemistry.txt
-  # /vg/-specific mining
-  - wordlists/vg/mining.txt
-  # /vg/-specific miscellaneous shit
-  - wordlists/vg/misc.txt
-  # /vg/-specific songs
-  - wordlists/vg/songs.txt
   # Common wordlists for all stations
   - wordlists/common.txt
-  # Censored announcements for "clean" stations.
-  #- wordlists/common-clean.txt
-  # Common profanity for all stations.
-  - wordlists/profanity.txt
 # Here, we can override the autodetected defaults for each phrase.
 overrides:
-  # Silence for 0.5s (see resynth_sounds.sh)
-  # We can figure out the duration ourselves, and it counts as 1 word
   '.':
     flags:
       #- old-vox
@@ -87,5 +67,3 @@ overrides:
       - no-process
     duration: 0.630295
     word-count: 1
-  voxtest5:
-    word-count: 30

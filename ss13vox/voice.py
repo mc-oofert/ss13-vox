@@ -87,13 +87,6 @@ class Voice(object):
             'phoneset': self.PHONESET
         }
 
-    def fast_serialize(self) -> str:
-        assert self.ID is not None
-        assert self.SEX.value is not None
-        #assert self.FESTIVAL_VOICE_ID is not None
-        assert self.PHONESET is not None
-        return self.ID+str(self.SEX.value)+str(self.FESTIVAL_VOICE_ID)+self.PHONESET
-
 class USRMSMale(Voice):
     '''
     RMS US Male: Sounds a bit like DECTalk (Stephen Hawking).  Uses US pronunciations.

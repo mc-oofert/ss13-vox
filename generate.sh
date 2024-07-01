@@ -1,2 +1,1 @@
-python create.py
-python BUILD.py --rebuild
+python3 create.py
