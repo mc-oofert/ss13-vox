@@ -1,5 +1,20 @@
 # SS13 VOX
 
+this fork uses an older version and has its own little awful hacks to work better with /tg/
+it will only generate female voice
+and weird python3.6 dependency removed
+
+as such just install ```python3.9``` on your ```20.04``` ubuntu VM install the requirements with python3.9 and pray that ```pybuildtools``` installs correctly, and just do ```sudo python3.9 setup.py``` or something
+if the relevant archive for the files is down, just hack it a little bit further to ignore downloading since i included them in the cache
+
+anyway usage is simple:
+add your words to the wordlist
+if desired also improve the lexicon.txt
+run ```sudo python3.9 create.py```
+and find your results in the dist folder
+
+##
+
 TTS-based announcer inspired by Half Life's announcement system.
 
 **This project was originally written in 2013 when I was still learning python, so it's a bit rough around the edges.** I am slowly trying to improve the code.
