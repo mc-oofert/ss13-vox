@@ -48,8 +48,7 @@ You can select which voice to use for each sex in `config.yml` in the `voices:` 
 ## Voice Sexes
 <table><tr><th>Sex</th><th>Meaning</th></tr>
 <tr><th><code>default</code></th><td>Non-AI automated announcements, like <code>vox_login</code>.</td></tr>
-<tr><th><code>fem</code></th><td>Feminine voice</td></tr>
-<tr><th><code>mas</code></th><td>Feminine voice</td></tr>
+<tr><th><code>mas</code></th><td>Masculine voice</td></tr>
 </table>
 
 ## Voice IDs
