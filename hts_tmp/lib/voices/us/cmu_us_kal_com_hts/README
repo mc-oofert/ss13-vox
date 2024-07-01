@@ -1,0 +1,217 @@
+
+                    HTS Voices for Festival
+                   release December 26, 2003
+                                
+Two HTS voices for Festival trained by using 450 utterances of
+"CSTR US KED Timit" (http://www.festvox.org/dbs/dbs_kdt.html)
+and 523 utterances of "CMU Communicator KAL limited domain"
+(http://www.festvox.org/dbs/dbs_com.html), respectively, and
+four HTS voices for Festival trained by using "CMU ARCTIC
+database" (http://www.festvox.org/cmu_arctic/) are released as a
+part of HMM-based Speech Synthesis System (HTS) version 1.1.1
+(http://hts.ics.nitech.ac.jp/).  Each of HTS voices consists of
+HMMs trained by using HTS and a small run-time synthesis engine,
+and can be used as a "voice" of Festival Speech Synthesis System
+(http://www.festvox.org/festival/) without any other HTS tools.
+
+****************************************************************
+                            Copying
+****************************************************************
+
+The current copyright on the scm codes for HTS voices is
+
+----------------------------------------------------------------
+               Nagoya Institute of Technology and
+                   Carnegie Mellon University
+                       Copyright (c) 2002
+                      All Rights Reserved.
+                                
+Permission is hereby granted, free of charge, to use and
+distribute this software and its documentation without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of this work, and to permit persons to whom this
+work is furnished to do so, subject to the following conditions:
+
+  1. The code must retain the above copyright notice, this list
+     of conditions and the following disclaimer.
+
+  2. Any modifications must be clearly marked as such.                
+
+  3. Original authors' names are not deleted.                         
+
+  4. The authors' names are not used to endorse or promote
+     products derived from this software without specific prior
+     written permission.
+                                                                       
+NAGOYA INSTITUTE OF TECHNOLOGY, CARNEGIE MELLON UNIVERSITY AND
+THE CONTRIBUTORS TO THIS WORK DISCLAIM ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL NAGOYA INSTITUTE
+OF TECHNOLOGY, CARNEGIE MELLON UNIVERSITY NOR THE CONTRIBUTORS
+BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
+ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTUOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+----------------------------------------------------------------
+
+The copyright on other pearl codes and binaries is
+
+----------------------------------------------------------------
+   The HMM-Based Speech Synthesis System (HTS): version 1.1.1
+                      HTS Working Group
+
+                 Department of Computer Science
+                 Nagoya Institute of Technology
+                              and
+  Interdisciplinary Graduate School of Science and Engineering
+                 Tokyo Institute of Technology
+                    Copyright (c) 2001-2003
+                      All Rights Reserved.
+
+Permission is hereby granted, free of charge, to use and
+distribute this software and its documentation without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of this work, and to permit persons to whom this
+work is furnished to do so, subject to the following conditions:
+
+  1. The code must retain the above copyright notice, this list
+     of conditions and the following disclaimer.
+
+  2. Any modifications must be clearly marked as such.
+                                                                       
+NAGOYA INSTITUTE OF TECHNOLOGY, TOKYO INSITITUTE OF TECHNOLOGY,
+HTS WORKING GROUP, AND THE CONTRIBUTORS TO THIS WORK DISCLAIM
+ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT
+SHALL NAGOYA INSTITUTE OF TECHNOLOGY, TOKYO INSITITUTE OF
+TECHNOLOGY, HTS WORKING GROUP, NOR THE CONTRIBUTORS BE LIABLE
+FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY
+DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTUOUS
+ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+----------------------------------------------------------------
+
+****************************************************************
+                          Installation
+****************************************************************
+
+*** Installation of HTS Voice ***
+
+(cmu_us_bdl_arctic_hts.tar.gz, cmu_us_slt_arctic_hts.tar.gz,
+cmu_us_jmk_arctic_hts.tar.gz, cmu_us_awb_arctic_hts.tar.gz, and
+cmu_us_kal_com_hts.tar.gz can also be used in the same manner.)
+
+ 0) Download "cstr_us_ked_timit_hts.tar.gz" from
+    http://hts.ics.nitech.ac.jp/ and expand it in the directory
+    which you installed the Festival.
+
+Note:
+
+The small run-time synthesis engine is in a form of Linux-i386
+binary.  If you are working on another platform, please
+re-compile it based on the source code included in
+"HTS-1.1.1_for_HTK-3.2.1.tar.gz."
+
+*** test ***
+
+ 0) Run Festival
+
+ 1) To change the current voice, type:
+
+    festival> (voice_cstr_us_ked_timit_hts)
+
+ 2) Now you can synthesize speech using the HTS voice in the
+    framework of Festival.  See the manual of Festival.
+
+    Example:
+
+      festival > (intro)
+
+      festival > (SayText "Alice was beginning to get tired.")
+
+*** Changing Voice Characteristics ***
+
+You can change the voice characteristics, F0 parameter, and
+speaking rate by modifying the values of the following
+variables.
+
+1. Vocal tract length: hts_fw_factor
+      Default: 0.42
+      Recommended range: 0.2 < hts_fw_factor < 0.6
+
+   Example: 
+     festival> (set! hts_fw_factor 0.1)
+
+2. F0 variation factor: hts_f0_std 1.0
+      Default: 1.0
+      Recommended range: 0.0 < hts_f0_std < 10
+
+   Example:
+     festival> (set! hts_f0_std 2)
+
+3. F0 shift: hts_f0_mean
+      Default: 0.0
+
+   Example:
+     festival > (set! hts_f0_mean 0)
+
+4. Speaking rate: hts_duration_stretch
+      Default: 0.0
+      Recommended range: -0.5 (fast) < hts_duration_stretch < 0.5 (slow)
+
+   Example:
+     festival > (set! hts_duration_stretch 0.1)
+
+5. Utterance length (second): hts_total_length
+      Default: None
+
+   Example:
+     festival > set! hts_total_length 10.0
+
+6. Voiced/Unvoiced threshold: hts_uv_threshold
+      Default: 0.5
+
+   Example:
+     festival > set! hts_uv_threshold 0.8
+
+7. Strength of postfiltering: hts_postfilter
+      Default: 0.3
+      Recommended range: 0 (without postfilter) < hts_postfilter < 0.8
+
+   Example:
+     festival > (set! hts_uv_threshold 0.6)
+
+8. Using phoneme durations estimated by Festival: hts_use_phone_align
+      Default: 0
+
+   Example:
+     festival> (set! hts_use_phone_align 1)
+
+****************************************************************
+                           Who we are
+****************************************************************
+
+HTS working group is a voluntary group for developing the
+HMM-Based Speech Synthesis System.  Current HTS working group
+members are
+
+  Keiichi Tokuda (Organizer) http://kt-lab.ics.nitech.ac.jp/~tokuda/
+  Heiga Zen (Maintainer)     http://kt-lab.ics.nitech.ac.jp/~zen/
+  Takashi Masuko             http://sp-www.ip.titech.ac.jp/~masuko/
+  Shinji Sako                http://kt-lab.ics.nitech.ac.jp/~sako/
+  Jun-ichi Yamagishi         
+  Daiki Sanno                
+  Masatsune Tamura           
+  Takayoshi Yoshimura        
+  Alan W. Black              http://www.cs.cmu.edu/~awb/
+  Ryosuke Tsuzuki            http://kt-lab.ics.nitech.ac.jp/~ryosuke/
+  Shunsuke Kataoka           http://kt-lab.ics.nitech.ac.jp/~shunsuke/
+
+and the members are dynamically changing.  The current formal
+contact address of HTS working group and a mailing list for HTS
+usesrs can be found at http://hts.ics.nitech.ac.jp/
+
