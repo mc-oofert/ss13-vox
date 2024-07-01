@@ -72,7 +72,7 @@ def InstallHTS():
 			os.makedirs('hts_tmp')
 		with Chdir('hts_tmp'):
 			for uri in NITECH_VOICES:
-				cmd(['wget','-c',uri], echo=True, show_output=True, critical=True)
+				cmd(['wget','-c',uri], echo=True, show_output=True, critical=False)
 			for filename in os.listdir('.'):
 				if os.path.isdir(filename): continue
 				cmd(['tar', 'xvf', filename], echo=True, show_output=False, critical=True)
